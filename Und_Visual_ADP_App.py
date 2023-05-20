@@ -13,8 +13,8 @@ st.markdown("<h1 style='text-align: center; '>Input Start & End Dates for ADP</h
 
 start_date = st.date_input(
     "ADP Start Date",
-    datetime.date(2023, 5, 18),
-    min_value=datetime.date(2023,5,18),
+    datetime.date(2023, 5, 6),
+    min_value=datetime.date(2023,5,6),
     max_value=date.today())
 
 end_date = st.date_input(
@@ -86,7 +86,7 @@ adp_risers_fallers.reset_index(inplace=True)
 
 # Draw plot
 plt.figure(figsize=(14,16), dpi= 80)
-plt.scatter(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, s=1100, alpha=.6, color=adp_risers_fallers.colors)
+plt.scatter(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, s=1500, alpha=.6, color=adp_risers_fallers.colors)
 for x, y, tex in zip(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, adp_risers_fallers['ADP Change']):
     t = plt.text(x, y, round(tex, 1), horizontalalignment='center', 
                  verticalalignment='center', fontdict={'color':'white',
