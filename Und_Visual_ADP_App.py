@@ -59,60 +59,74 @@ adp_df['ADP Change'] = adp_df['start_adp'] - adp_df['end_adp']
 # Only show these columns in the DF
 final_adp_df = adp_df[['full_name', 'position', 'team', 'start_adp', 'end_adp', 'ADP Change', 'start_pos_rank', 'end_pos_rank']]
 
-# Print DF
-st.markdown("<h1 style='text-align: center; '>Changes in Underdog ADP</h1>", unsafe_allow_html=True)
-st.dataframe(final_adp_df)
 
-#####################
-# Creating the Plot #
-#####################
 
-# Sort largest to smallest
-final_adp_df = final_adp_df.sort_values(by = "ADP Change", ascending=False)
-final_adp_df_head = final_adp_df.head(10)
+########
+# Tabs #
+########
 
-# Sort smallest to largets
-final_adp_df = final_adp_df.sort_values(by = "ADP Change", ascending=True)
-final_adp_df_tail = final_adp_df.head(10)
+tab_chart, tab_table = st.tabs(["ADP Chart", "ADP Table"])
 
-# Stack df's on top of each other
-dfs = [final_adp_df_head, final_adp_df_tail]
-adp_risers_fallers = pd.concat(dfs).reset_index(drop=True)
 
-# Prepare Data
-x = adp_risers_fallers.loc[:, ['ADP Change']]
-adp_risers_fallers['colors'] = ['red' if x < 0 else 'darkgreen' for x in adp_risers_fallers['ADP Change']]
-adp_risers_fallers.sort_values('ADP Change', inplace=True)
-adp_risers_fallers.reset_index(inplace=True)
+with tab_table:
 
-# Draw plot
-plt.figure(figsize=(14,16), dpi= 80)
-plt.scatter(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, s=1500, alpha=.6, color=adp_risers_fallers.colors)
-for x, y, tex in zip(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, adp_risers_fallers['ADP Change']):
-    t = plt.text(x, y, round(tex, 1), horizontalalignment='center', 
-                 verticalalignment='center', fontdict={'color':'white',
-                                                      'size': 15})
+    # Print DF
+    st.markdown("<h1 style='text-align: center; '>Changes in Underdog ADP</h1>", unsafe_allow_html=True)
+    st.dataframe(final_adp_df)
     
-# Create start and end dates for title
-start_text = str(start_date)
-end_text = str(end_date)
+    
+with tab_chart:    
 
-# Only keep month and day
-start_text = start_text[5:]
-end_text = end_text[5:]
+    #####################
+    # Creating the Plot #
+    #####################
 
-# Decorations
-# Lighten borders
-plt.gca().spines["top"].set_alpha(.3)
-plt.gca().spines["bottom"].set_alpha(.3)
-plt.gca().spines["right"].set_alpha(.3)
-plt.gca().spines["left"].set_alpha(.3)
+    # Sort largest to smallest
+    final_adp_df = final_adp_df.sort_values(by = "ADP Change", ascending=False)
+    final_adp_df_head = final_adp_df.head(10)
 
-plt.yticks(adp_risers_fallers.index, adp_risers_fallers['full_name'], fontsize=17)
-plt.xticks(fontsize = 17)
-plt.title('10 Biggest Risers & Fallers: ' + start_text + ' -> ' + end_text, fontdict={'size':30})
-plt.xlabel('Change in Underdog ADP', fontdict={'size': 20})
-plt.grid(linestyle='--', alpha=0.5)
-plt.xlim(min(adp_risers_fallers['ADP Change'])-1, max(adp_risers_fallers['ADP Change'])+1)
-plt.axvline(x=0, color='gray', linewidth=0.75)
-st.pyplot(plt)
+    # Sort smallest to largets
+    final_adp_df = final_adp_df.sort_values(by = "ADP Change", ascending=True)
+    final_adp_df_tail = final_adp_df.head(10)
+
+    # Stack df's on top of each other
+    dfs = [final_adp_df_head, final_adp_df_tail]
+    adp_risers_fallers = pd.concat(dfs).reset_index(drop=True)
+
+    # Prepare Data
+    x = adp_risers_fallers.loc[:, ['ADP Change']]
+    adp_risers_fallers['colors'] = ['red' if x < 0 else 'darkgreen' for x in adp_risers_fallers['ADP Change']]
+    adp_risers_fallers.sort_values('ADP Change', inplace=True)
+    adp_risers_fallers.reset_index(inplace=True)
+
+    # Draw plot
+    plt.figure(figsize=(14,16), dpi= 80)
+    plt.scatter(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, s=1500, alpha=.6, color=adp_risers_fallers.colors)
+    for x, y, tex in zip(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, adp_risers_fallers['ADP Change']):
+        t = plt.text(x, y, round(tex, 1), horizontalalignment='center', 
+                     verticalalignment='center', fontdict={'color':'white',
+                                                           'size': 15})
+    
+    # Create start and end dates for title
+    start_text = str(start_date)
+    end_text = str(end_date)
+
+    # Only keep month and day
+    start_text = start_text[5:]
+    end_text = end_text[5:]
+
+    # Decorations
+    # Lighten borders
+    plt.gca().spines["top"].set_alpha(.3)
+    plt.gca().spines["bottom"].set_alpha(.3)
+    plt.gca().spines["right"].set_alpha(.3)
+    plt.gca().spines["left"].set_alpha(.3)
+
+    plt.yticks(adp_risers_fallers.index, adp_risers_fallers['full_name'], fontsize=17)
+    plt.xticks(fontsize = 17)
+    plt.title('10 Biggest Risers & Fallers: ' + start_text + ' -> ' + end_text, fontdict={'size':30})
+    plt.xlabel('Change in Underdog ADP', fontdict={'size': 20})
+    plt.grid(linestyle='--', alpha=0.5)
+    plt.xlim(min(adp_risers_fallers['ADP Change'])-1, max(adp_risers_fallers['ADP Change'])+1)
+    plt.axvline(x=0, color='gray', linewidth=0.75)
+    st.pyplot(plt)
