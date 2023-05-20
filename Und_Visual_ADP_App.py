@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 # Create a df that compares the differences
 # Can do any analysis and graphs we want after that!
 st.markdown("<h1 style='text-align: center; '>Input Start & End Dates for ADP</h1>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; '>Please input a start date before the end date</h4>", unsafe_allow_html=True)
 
 start_date = st.date_input(
     "ADP Start Date",
@@ -20,7 +21,7 @@ start_date = st.date_input(
 end_date = st.date_input(
     "ADP End Date",
     value=date.today(),
-    min_value=datetime.date(2023,5,18),
+    min_value=datetime.date(2023,5,6),
     max_value=date.today())
 
 # Collect ADP's for the two dates given
