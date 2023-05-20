@@ -59,7 +59,7 @@ adp_df['ADP Change'] = adp_df['start_adp'] - adp_df['end_adp']
 final_adp_df = adp_df[['full_name', 'position', 'team', 'start_adp', 'end_adp', 'ADP Change', 'start_pos_rank', 'end_pos_rank']]
 
 # Print DF
-st.markdown("<h1 style='text-align: center; '>Changes in ADP</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; '>Changes in Underdog ADP</h1>", unsafe_allow_html=True)
 st.dataframe(final_adp_df)
 
 #####################
@@ -115,4 +115,3 @@ plt.grid(linestyle='--', alpha=0.5)
 plt.xlim(min(adp_risers_fallers['ADP Change'])-1, max(adp_risers_fallers['ADP Change'])+1)
 plt.axvline(x=0, color='gray', linewidth=0.75)
 st.pyplot(plt)
-
