@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 import datetime
 from datetime import date
+from datetime import timedelta
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -11,16 +12,18 @@ import matplotlib.pyplot as plt
 # Can do any analysis and graphs we want after that!
 st.markdown("<h1 style='text-align: center; '>Input Start & End Dates for ADP</h1>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center; '>Please input a start date before the end date</h4>", unsafe_allow_html=True)
+st.markdown("<h6 style='text-align: center; '>Note: If you use this page late at night, it might open with an error.</h6>", unsafe_allow_html=True)
+st.markdown("<h6 style='text-align: center; '>All you need to do is adjust the ADP End Date one day back to fix it.</h6>", unsafe_allow_html=True)
 
 start_date = st.date_input(
     "ADP Start Date",
     datetime.date(2023, 5, 6),
     min_value=datetime.date(2023,5,6),
-    max_value=date.today())
+    max_value=date.today() - timedelta(days=1))
 
 end_date = st.date_input(
     "ADP End Date",
-    value=date.today(),
+    value=date.today() - timedelta(days=1),
     min_value=datetime.date(2023,5,6),
     max_value=date.today())
 
@@ -42,7 +45,7 @@ end_df = end_df.rename(columns = {'adp': 'end_adp',
                             'date': 'end_date'})
 
 # Merge on id, player_id player_name, position, team
-adp_df = start_df.merge(end_df, on = ['id', 'player_id', 'full_name', 'position', 'team'])
+adp_df = start_df.merge(end_df, on = ['id', 'player_id', 'full_name', 'position'])
 
 # Replace "-" with 250
 adp_df['start_adp'] = adp_df['start_adp'].str.replace('-','216')
@@ -57,8 +60,28 @@ adp_df['end_adp'] = adp_df['end_adp'].astype(float)
 adp_df['ADP Change'] = adp_df['start_adp'] - adp_df['end_adp']
 
 # Only show these columns in the DF
-final_adp_df = adp_df[['full_name', 'position', 'team', 'start_adp', 'end_adp', 'ADP Change', 'start_pos_rank', 'end_pos_rank']]
+final_adp_df = adp_df[['full_name', 'position', 'team_y', 'start_adp', 'end_adp', 'ADP Change', 'start_pos_rank', 'end_pos_rank']]
 
+# Rename table headers
+final_adp_df = final_adp_df.rename(columns = {'full_name': 'Player',
+                                              'position': 'Pos',
+                                              'team': 'Team',
+                                              'start_adp': 'Start ADP',
+                                              'end_adp': 'End ADP',
+                                              'start_pos_rank': 'Start Pos Rank',
+                                              'end_pos_rank': 'End Pos Rank',
+                                              'team_y': 'Team'})
+
+
+# Set up filter
+selected_positions = st.multiselect(
+    'Would you like to filter by specific positions?',
+    ['QB', 'RB', 'WR', 'TE'],
+    ['QB', 'RB', 'WR', 'TE'])
+
+
+# Filter pos
+final_adp_df = final_adp_df[final_adp_df['Pos'].isin(selected_positions)]
 
 
 ########
@@ -122,7 +145,7 @@ with tab_chart:
     plt.gca().spines["right"].set_alpha(.3)
     plt.gca().spines["left"].set_alpha(.3)
 
-    plt.yticks(adp_risers_fallers.index, adp_risers_fallers['full_name'], fontsize=17)
+    plt.yticks(adp_risers_fallers.index, adp_risers_fallers['Player'], fontsize=17)
     plt.xticks(fontsize = 17)
     plt.title('10 Biggest Risers & Fallers: ' + start_text + ' -> ' + end_text, fontdict={'size':30})
     plt.xlabel('Change in Underdog ADP', fontdict={'size': 20})
