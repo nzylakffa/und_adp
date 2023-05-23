@@ -123,7 +123,7 @@ with tab_chart:
     adp_risers_fallers.reset_index(inplace=True)
 
     # Draw plot
-    plt.figure(figsize=(14,16), dpi= 80)
+    fig = plt.figure(figsize=(14,16), dpi= 80)
     plt.scatter(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, s=1500, alpha=.6, color=adp_risers_fallers.colors)
     for x, y, tex in zip(adp_risers_fallers['ADP Change'], adp_risers_fallers.index, adp_risers_fallers['ADP Change']):
         t = plt.text(x, y, round(tex, 1), horizontalalignment='center', 
@@ -152,4 +152,4 @@ with tab_chart:
     plt.grid(linestyle='--', alpha=0.5)
     plt.xlim(min(adp_risers_fallers['ADP Change'])-1, max(adp_risers_fallers['ADP Change'])+1)
     plt.axvline(x=0, color='gray', linewidth=0.75)
-    st.pyplot(plt)
+    st.pyplot(fig)
