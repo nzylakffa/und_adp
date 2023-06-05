@@ -166,7 +166,7 @@ with tab_player:
     if load:
         html = requests.get('https://github.com/nzylakffa/und_adp')
         dfs = []
-        for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a'), features = 'html'):
+        for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a'), features = 'lxml'):
             if hasattr(link, 'href') and link['href'].endswith('.csv'):
                 url = 'https://github.com'+link['href'].replace('/blob/', '/raw/')
                 dfs.append(pd.read_csv(url))
