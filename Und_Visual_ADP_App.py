@@ -186,7 +186,7 @@ with tab_player:
     # Rename table headers
     df = df.rename(columns = {'full_name': 'Player'})
 
-    df['date'] = pd.to_datetime(df['date'], format="%Y/%m/%d", exact=False)
+    df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d", exact=False)
 
     df = df.sort_values(by = 'Player', ascending = True)
     df = df.sort_values(by = 'date', ascending = True)
