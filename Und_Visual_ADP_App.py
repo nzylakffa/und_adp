@@ -5,6 +5,10 @@ from datetime import date
 from datetime import timedelta
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from bs4 import BeautifulSoup, SoupStrainer
+import requests
+import altair as alt
+
 
 # Create two buttons for the dates's your comparing
 # The data will be pulled for each of those dates
@@ -55,7 +59,6 @@ adp_df['end_adp'] = adp_df['end_adp'].str.replace('-','216')
 adp_df['start_adp'] = adp_df['start_adp'].astype(float)
 adp_df['end_adp'] = adp_df['end_adp'].astype(float)
 
-
 # Calculate change in ADP!
 adp_df['ADP Change'] = adp_df['start_adp'] - adp_df['end_adp']
 
@@ -88,7 +91,7 @@ final_adp_df = final_adp_df[final_adp_df['Pos'].isin(selected_positions)]
 # Tabs #
 ########
 
-tab_chart, tab_table = st.tabs(["ADP Chart", "ADP Table"])
+tab_chart, tab_table, tab_player = st.tabs(["ADP Chart", "ADP Table", "Player ADP"])
 
 
 with tab_table:
@@ -153,3 +156,53 @@ with tab_chart:
     plt.xlim(min(adp_risers_fallers['ADP Change'])-1, max(adp_risers_fallers['ADP Change'])+1)
     plt.axvline(x=0, color='gray', linewidth=0.75)
     st.pyplot(fig)
+    
+with tab_player:
+    df = pd.DataFrame(columns = ["full_name", "adp", "date"])
+    st.caption("This tab will pull it's own ADP's!")
+    st.caption("That means there's no need to use the above filters")
+    st.caption("It will take ~ 15 seconds each time you select a player/players. Please be Patient")
+    load = st.checkbox("Check the box to collect ADP's", value=True)
+    if load:
+        html = requests.get('https://github.com/nzylakffa/und_adp')
+        dfs = []
+        for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a')):
+            if hasattr(link, 'href') and link['href'].endswith('.csv'):
+                url = 'https://github.com'+link['href'].replace('/blob/', '/raw/')
+                dfs.append(pd.read_csv(url))
+                df = pd.concat(dfs)
+            
+
+    selected_players = st.multiselect(
+    "Which Player's ADP Would You Like to Compare?",
+    df['full_name'].unique(),
+    ["Kadarius Toney", "Treylon Burks", "Isiah Pacheco"])
+
+    df = df[df['full_name'].isin(selected_players)]
+
+    df = df[['full_name', 'adp', 'date']]
+    
+    # Rename table headers
+    df = df.rename(columns = {'full_name': 'Player'})
+
+    df['date'] = pd.to_datetime(df['date'], format="%Y/%m/%d")
+
+    df = df.sort_values(by = 'Player', ascending = True)
+    df = df.sort_values(by = 'date', ascending = True)
+    df = df.reset_index(drop=True)
+
+    line_chart = alt.Chart(df).mark_line().encode(
+        alt.X('date:T', title = "Date"),
+        alt.Y("adp:Q", title = "ADP", scale=alt.Scale(reverse=True, zero=False), axis=alt.Axis(tickCount=8)),
+        color=alt.Color("Player", legend=None))
+    
+    label = line_chart.encode(
+    x='max(date):T',
+    y=alt.Y('adp:Q', aggregate = alt.ArgmaxDef(argmax='date')),
+    text='Player')
+    
+    text = label.mark_text(align='left', dx=4)
+
+    circle = label.mark_circle()
+    
+    st.altair_chart(line_chart + circle + text, use_container_width=True)
