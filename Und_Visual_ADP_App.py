@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup, SoupStrainer
 import requests
 import altair as alt
+import lxml
 
 
 # Create two buttons for the dates's your comparing
@@ -185,7 +186,7 @@ with tab_player:
     # Rename table headers
     df = df.rename(columns = {'full_name': 'Player'})
 
-    df['date'] = pd.to_datetime(df['date'], format="%Y/%m/%d")
+    df['date'] = pd.to_datetime(df['date'], format="%Y/%m/%d", exact=False)
 
     df = df.sort_values(by = 'Player', ascending = True)
     df = df.sort_values(by = 'date', ascending = True)
