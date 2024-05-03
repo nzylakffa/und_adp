@@ -29,7 +29,7 @@ start_date = st.date_input(
 end_date = st.date_input(
     "ADP End Date",
     value=date.today() - timedelta(days=1),
-    min_value=datetime.date(2023,5,6),
+    min_value=datetime.date(2024,5,3),
     max_value=date.today())
 
 # Collect ADP's for the two dates given
