@@ -22,8 +22,8 @@ st.markdown("<h6 style='text-align: center; '>All you need to do is adjust the A
 
 start_date = st.date_input(
     "ADP Start Date",
-    datetime.date(2023, 5, 6),
-    min_value=datetime.date(2023,5,6),
+    datetime.date(2024, 5, 3),
+    min_value=datetime.date(2024,5,3),
     max_value=date.today() - timedelta(days=1))
 
 end_date = st.date_input(
