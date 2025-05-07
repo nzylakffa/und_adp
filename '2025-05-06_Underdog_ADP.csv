@@ -1,4 +1,4 @@
-id,player_id,adp,pos_rank,full_name,slotName,team,date
+id,player_id,adp,pos_rank,full_name,position,team,date
 b24eb93f-72bd-4c23-bed6-807d542bab65,19818cc6-e21b-4258-9315-93cb64fb92e7,1.1,WR1,Ja'Marr Chase,WR,CIN,2025-05-06
 1dad2b6f-6089-4844-8319-6f1eb23b5003,aa48a0ad-1d71-4d09-a86a-1e6e1987d911,2.5,RB1,Saquon Barkley,RB,PHI,2025-05-06
 fb2b25a4-b791-4ef0-bc45-41099b503a69,d61fb310-35c9-4f90-a99c-fb4605a870f4,3.3,WR2,Justin Jefferson,WR,MIN,2025-05-06
