@@ -170,12 +170,10 @@ with tab_player:
         for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a'), features='lxml'):
             if hasattr(link, 'href') and link['href'].endswith('.csv'):
                 filename = link['href'].split('/')[-1]  # Get just the file name
-                if filename[:10] >= '2025-04-28':  # Only load files from 2025-04-28 onward
+                clean_filename = filename.lstrip("'")
+                if clean_filename[:10] >= '2025-04-28':
                     url = 'https://github.com' + link['href'].replace('/blob/', '/raw/')
                     dfs.append(pd.read_csv(url))
-                    df = pd.concat(dfs)
-
-            
 
     selected_players = st.multiselect(
     "Which Player's ADP Would You Like to Compare?",
