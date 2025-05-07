@@ -169,11 +169,16 @@ with tab_player:
         dfs = []
         for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a'), features='lxml'):
             if hasattr(link, 'href') and link['href'].endswith('.csv'):
-                filename = link['href'].split('/')[-1]  # Get just the file name
+                filename = link['href'].split('/')[-1]
                 clean_filename = filename.lstrip("'")
                 if clean_filename[:10] >= '2025-04-28':
-                    url = 'https://github.com' + link['href'].replace('/blob/', '/raw/')
-                    dfs.append(pd.read_csv(url))
+                    # Build correct raw URL using cleaned filename
+                    raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/'{clean_filename}"
+                    try:
+                        dfs.append(pd.read_csv(raw_url))
+                    except Exception as e:
+                        st.warning(f"Failed to load {raw_url}: {e}")
+
 
     selected_players = st.multiselect(
     "Which Player's ADP Would You Like to Compare?",
