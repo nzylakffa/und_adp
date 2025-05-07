@@ -203,14 +203,17 @@ with tab_player:
     min_adp = plot_df["adp"].min()
     max_adp = plot_df["adp"].max()
     pad     = (max_adp - min_adp) * 0.1
-    y_scale = alt.Scale(reverse=True, domain=[max_adp + pad, min_adp - pad])
-
+    y_scale = alt.Scale(
+        reverse=True,
+        domain=[min_adp - pad, max_adp + pad]
+    )
+    
     legend = alt.Legend(
         title="Player",
-        orient="top",            # move legend above the plot
-        direction="horizontal",  # lay items out in a row
-        padding=10,              # a little breathing room
-        labelSeparation=20       # space between each entry
+        orient="top",
+        direction="horizontal",
+        padding=10,
+        labelSeparation=20
     )
     
     line = (
@@ -218,13 +221,10 @@ with tab_player:
            .mark_line()
            .encode(
                alt.X("date:T", title="Date"),
-               alt.Y("adp:Q",   title="ADP", scale=y_scale),
+               alt.Y("adp:Q", title="ADP", scale=y_scale),
                alt.Color("Player:N", legend=legend)
            )
-           .properties(
-               # widen it so legend has room
-               width=600
-           )
+           .properties(width=600)
     )
     
     label  = line.encode(
