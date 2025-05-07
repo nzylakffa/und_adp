@@ -159,69 +159,84 @@ with tab_chart:
     st.pyplot(fig)
     
 with tab_player:
-    # start empty
-    df = pd.DataFrame(columns=["full_name","adp","date"])
-    load = st.checkbox("Collect ADP data", value=True)
+    # start with your empty DF
+    df = pd.DataFrame(columns=["full_name", "adp", "date"])
+    
+    # your captions intact
+    st.caption("This tab will pull it's own ADP's!")
+    st.caption("That means there's no need to use the above filters")
+    st.caption("It will take ~ 15 seconds each time you select a player/players. Please be Patient")
+    
+    load = st.checkbox("Check the box to collect ADP's", value=True)
     if load:
-        html = requests.get("https://github.com/nzylakffa/und_adp")
-        dfs = []
-        found = []
-        for link in BeautifulSoup(html.text, parse_only=SoupStrainer("a"), features="lxml"):
-            href = link.get("href","")
+        # scrape the repo page
+        resp = requests.get("https://github.com/nzylakffa/und_adp")
+        soup = BeautifulSoup(resp.text, "lxml")
+        
+        # collect (date, filename) tuples
+        records = []
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
             if href.endswith(".csv"):
-                filename = href.split("/")[-1]       # e.g. "'2025-04-28_Underdog_ADP.csv"
-                found.append(filename)
-                clean = filename.lstrip("'")         # "2025-04-28_…"
-                if clean[:10] >= "2025-04-28":
-                    raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/{filename}"
-                    st.write("Trying:", raw_url)
-                    try:
-                        dfs.append(pd.read_csv(raw_url))
-                    except Exception as e:
-                        st.warning(f"Couldn’t load {raw_url}: {e}")
-
-        st.write("All CSV filenames on repo:", found)
-        if dfs:
-            df = pd.concat(dfs, ignore_index=True)
+                filename = href.split("/")[-1]         # e.g. "'2025-04-28_Underdog_ADP.csv"
+                clean = filename.lstrip("'")            # "2025-04-28_Underdog_ADP.csv"
+                try:
+                    dt = datetime.datetime.strptime(clean[:10], "%Y-%m-%d").date()
+                except ValueError:
+                    continue
+                if dt >= datetime.date(2025, 4, 28):
+                    records.append((dt, filename))
+        
+        if not records:
+            st.warning("No files found on or after 2025-04-28.")
         else:
-            st.warning("No files matched your date filter or raw URLs were invalid.")
-
-    # build player select with safe defaults
+            # sort chronologically
+            records.sort(key=lambda x: x[0])
+            dfs = []
+            for dt, fn in records:
+                raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/{fn}"
+                st.write("Loading:", raw_url)  # debug—remove if you like
+                try:
+                    dfs.append(pd.read_csv(raw_url))
+                except Exception as e:
+                    st.warning(f"Failed to load {fn}: {e}")
+            if dfs:
+                df = pd.concat(dfs, ignore_index=True)
+            else:
+                st.warning("Failed to load any CSVs after filtering.")
+    
+    # build the multiselect safely
     available_players = df["full_name"].unique().tolist()
     default_players   = ["Kyren Williams", "Rashee Rice", "Breece Hall"]
     valid_defaults    = [p for p in default_players if p in available_players]
-
+    
     selected_players = st.multiselect(
         "Which Player's ADP Would You Like to Compare?",
         options=available_players,
         default=valid_defaults,
     )
-
-    # subset & clean for chart
-    df = df[df["full_name"].isin(selected_players)]
-    df = (
-        df[["full_name", "adp", "date"]]
-        .rename(columns={"full_name": "Player"})
+    
+    # filter down for charting
+    plot_df = df[df["full_name"].isin(selected_players)].copy()
+    plot_df["date"] = pd.to_datetime(plot_df["date"], format="%Y-%m-%d", errors="coerce")
+    plot_df = plot_df.sort_values(["full_name", "date"])
+    
+    # draw the Altair line chart
+    line = (
+        alt.Chart(plot_df)
+           .mark_line()
+           .encode(
+               x=alt.X("date:T", title="Date"),
+               y=alt.Y("adp:Q", title="ADP", scale=alt.Scale(reverse=True, zero=False)),
+               color=alt.Color("full_name:N", title="Player")
+           )
     )
-    df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d", errors="coerce")
-    df = df.sort_values(["Player", "date"]).reset_index(drop=True)
-
-    # draw Altair line chart
-    line_chart = (
-        alt.Chart(df)
-        .mark_line()
-        .encode(
-            alt.X("date:T", title="Date"),
-            alt.Y("adp:Q", title="ADP", scale=alt.Scale(reverse=True, zero=False), axis=alt.Axis(tickCount=8)),
-            color=alt.Color("Player", legend=None),
-        )
-    )
-    label = line_chart.encode(
+    label = line.encode(
         x="max(date):T",
         y=alt.Y("adp:Q", aggregate=alt.ArgmaxDef(argmax="date")),
-        text="Player",
+        text="full_name"
     )
     text   = label.mark_text(align="left", dx=4)
     circle = label.mark_circle()
-
-    st.altair_chart(line_chart + circle + text, use_container_width=True)
+    
+    st.altair_chart(line + circle + text, use_container_width=True)
