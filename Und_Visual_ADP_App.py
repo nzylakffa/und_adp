@@ -205,13 +205,19 @@ with tab_player:
     pad     = (max_adp - min_adp) * 0.1
     y_scale = alt.Scale(reverse=True, domain=[max_adp + pad, min_adp - pad])
 
+    legend = alt.Legend(
+        title="Player",
+        orient="right",   # push the legend to the right side
+        offset=20         # add a little extra space
+    )
+
     line = (
         alt.Chart(plot_df)
            .mark_line()
            .encode(
                alt.X("date:T", title="Date"),
                alt.Y("adp:Q", title="ADP", scale=y_scale),
-               alt.Color("Player:N", title="Player")
+               alt.Color("Player:N", legend=legend)
            )
     )
     label  = line.encode(
