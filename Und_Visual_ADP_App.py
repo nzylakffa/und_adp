@@ -169,18 +169,20 @@ with tab_player:
         dfs = []
         for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a'), features='lxml'):
             if hasattr(link, 'href') and link['href'].endswith('.csv'):
-                filename = link['href'].split('/')[-1]
-                clean_filename = filename.lstrip("'")
-                if clean_filename[:10] >= '2025-04-28':
-                    raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/'{clean_filename}"
+                filename = link['href'].split('/')[-1]         # e.g. "'2025-04-28_Underdog_ADP.csv"
+                clean_filename = filename.lstrip("'")          # e.g. "2025-04-28_Underdog_ADP.csv"
+                if clean_filename[:10] >= '2025-04-28':        # filter using cleaned date
+                    # ✅ Use the correct raw.githubusercontent.com format
+                    raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/{filename}"
                     try:
                         dfs.append(pd.read_csv(raw_url))
                     except Exception as e:
-                        st.warning(f"Failed to load {raw_url}: {e}")
+                        st.warning(f"❌ Failed to load {raw_url}: {e}")
         if dfs:
             df = pd.concat(dfs, ignore_index=True)
         else:
-            st.warning("No ADP files were loaded.")
+            st.warning("⚠️ No ADP files were loaded. Double-check your filenames and network.")
+
 
     # Safely handle default player selection
     available_players = df['full_name'].unique().tolist()
