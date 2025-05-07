@@ -160,6 +160,8 @@ with tab_chart:
 with tab_player:
     # ── Initialize & Captions ──────────────────────────────────────────────
     df = pd.DataFrame(columns=["full_name","adp","date"])
+    st.caption("This tab will pull it's own ADP's!")
+    st.caption("That means there's no need to use the above filters")
     st.caption("It will take ~ 15 seconds each time you select a player/players. Please be Patient")
     
     load = st.checkbox("Check the box to collect ADP's", value=True)
@@ -182,14 +184,20 @@ with tab_player:
     # ── Player selector ────────────────────────────────────────────────────
     available = df["full_name"].unique().tolist()
     defaults  = [p for p in ["Kyren Williams","Rashee Rice","Breece Hall"] if p in available]
-    selected = st.multiselect("Which Player's ADP Would You Like to Compare?",
-                               options=available, default=defaults)
+    selected = st.multiselect(
+        "Which Player's ADP Would You Like to Compare?",
+        options=available, default=defaults
+    )
     
     # ── Prepare & plot ────────────────────────────────────────────────────
     plot_df = df[df["full_name"].isin(selected)].copy()
     plot_df["date"] = pd.to_datetime(plot_df["date"], format="%Y-%m-%d", errors="coerce")
     plot_df = plot_df.sort_values(["full_name","date"]).reset_index(drop=True)
     plot_df = plot_df.rename(columns={"full_name":"Player"})
+
+    # **NEW**: ensure 'adp' is numeric before padding
+    plot_df["adp"] = pd.to_numeric(plot_df["adp"], errors="coerce")
+    plot_df = plot_df.dropna(subset=["adp"])
 
     # auto-scale Y-axis with padding
     min_adp = plot_df["adp"].min()
