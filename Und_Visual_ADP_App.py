@@ -167,11 +167,14 @@ with tab_player:
     if load:
         html = requests.get('https://github.com/nzylakffa/und_adp')
         dfs = []
-        for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a'), features = 'lxml'):
+        for link in BeautifulSoup(html.text, parse_only=SoupStrainer('a'), features='lxml'):
             if hasattr(link, 'href') and link['href'].endswith('.csv'):
-                url = 'https://github.com'+link['href'].replace('/blob/', '/raw/')
-                dfs.append(pd.read_csv(url))
-                df = pd.concat(dfs)
+                filename = link['href'].split('/')[-1]  # Get just the file name
+                if filename[:10] >= '2025-04-28':  # Only load files from 2025-04-28 onward
+                    url = 'https://github.com' + link['href'].replace('/blob/', '/raw/')
+                    dfs.append(pd.read_csv(url))
+        df = pd.concat(dfs) if dfs else pd.DataFrame(columns=["full_name", "adp", "date"])
+
             
 
     selected_players = st.multiselect(
