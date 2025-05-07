@@ -177,7 +177,7 @@ with tab_player:
     selected_players = st.multiselect(
     "Which Player's ADP Would You Like to Compare?",
     df['full_name'].unique(),
-    ["Kadarius Toney", "Treylon Burks", "Isiah Pacheco"])
+    ["Kyren Williams", "Rashee Rice", "D.J. Moore"])
 
     df = df[df['full_name'].isin(selected_players)]
 
