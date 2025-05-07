@@ -9,8 +9,6 @@ from bs4 import BeautifulSoup, SoupStrainer
 import requests
 import altair as alt
 import lxml
-import urllib.parse
-
 
 # Create two buttons for the dates's your comparing
 # The data will be pulled for each of those dates
@@ -160,54 +158,36 @@ with tab_chart:
     st.pyplot(fig)
     
 with tab_player:
-    # start with your empty DF
+    # 1) Initialize empty DataFrame
     df = pd.DataFrame(columns=["full_name", "adp", "date"])
     
-    # your captions intact
+    # 2) Your captions (unchanged)
     st.caption("This tab will pull it's own ADP's!")
     st.caption("That means there's no need to use the above filters")
     st.caption("It will take ~ 15 seconds each time you select a player/players. Please be Patient")
     
+    # 3) Checkbox to trigger loading
     load = st.checkbox("Check the box to collect ADP's", value=True)
     if load:
-        # scrape the repo page
-        resp = requests.get("https://github.com/nzylakffa/und_adp")
-        soup = BeautifulSoup(resp.text, "lxml")
+        dfs = []
+        # Loop over every date from start_date to end_date
+        for single_date in pd.date_range(start_date, end_date):
+            date_str = single_date.strftime("%Y-%m-%d")
+            # This matches your other tabs' URLs exactly
+            url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/'{date_str}_Underdog_ADP.csv"
+            try:
+                tmp = pd.read_csv(url)
+                dfs.append(tmp)
+            except Exception:
+                # skip missing dates silently
+                continue
         
-        # collect (date, encoded-filename) tuples
-        records = []
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
-            if href.endswith(".csv"):
-                href_fn    = href.split("/")[-1]               # e.g. "%272025-04-28_Underdog_ADP.csv"
-                decoded_fn = urllib.parse.unquote(href_fn)     # e.g. "'2025-04-28_…"
-                clean      = decoded_fn.lstrip("'")            # e.g. "2025-04-28_…"
-                try:
-                    dt = datetime.datetime.strptime(clean[:10], "%Y-%m-%d").date()
-                except ValueError:
-                    continue
-                if dt >= datetime.date(2025, 4, 28):
-                    records.append((dt, href_fn))
-        
-        if not records:
-            st.warning("No files found on or after 2025-04-28.")
+        if dfs:
+            df = pd.concat(dfs, ignore_index=True)
         else:
-            # sort by date
-            records.sort(key=lambda x: x[0])
-            dfs = []
-            for dt, fn_enc in records:
-                raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/{fn_enc}"
-                st.write("Loading:", raw_url)  # debug: remove if you like
-                try:
-                    dfs.append(pd.read_csv(raw_url))
-                except Exception as e:
-                    st.warning(f"Failed to load {fn_enc}: {e}")
-            if dfs:
-                df = pd.concat(dfs, ignore_index=True)
-            else:
-                st.warning("Failed to load any CSVs after filtering.")
+            st.warning("No ADP files were loaded. Check that your start/end dates are correct.")
     
-    # build the multiselect safely
+    # 4) Build the multiselect safely
     available_players = df["full_name"].unique().tolist()
     default_players   = ["Kyren Williams", "Rashee Rice", "Breece Hall"]
     valid_defaults    = [p for p in default_players if p in available_players]
@@ -218,17 +198,18 @@ with tab_player:
         default=valid_defaults,
     )
     
-    # filter & plot
+    # 5) Filter & prepare for plotting
     plot_df = df[df["full_name"].isin(selected_players)].copy()
     plot_df["date"] = pd.to_datetime(plot_df["date"], format="%Y-%m-%d", errors="coerce")
     plot_df = plot_df.sort_values(["full_name", "date"]).reset_index(drop=True)
     
+    # 6) Draw Altair line chart
     line = (
         alt.Chart(plot_df)
            .mark_line()
            .encode(
                x=alt.X("date:T", title="Date"),
-               y=alt.Y("adp:Q", title="ADP", scale=alt.Scale(reverse=True, zero=False)),
+               y=alt.Y("adp:Q", title="ADP", scale=alt.Scale(reverse=True)),
                color=alt.Color("full_name:N", title="Player")
            )
     )
@@ -241,4 +222,3 @@ with tab_player:
     circle = label.mark_circle()
     
     st.altair_chart(line + circle + text, use_container_width=True)
-
