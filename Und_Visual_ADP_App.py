@@ -158,67 +158,60 @@ with tab_chart:
     st.pyplot(fig)
     
 with tab_player:
-    # 1) Initialize empty DataFrame
-    df = pd.DataFrame(columns=["full_name", "adp", "date"])
-    
-    # 2) Your captions (unchanged)
-    st.caption("This tab will pull it's own ADP's!")
-    st.caption("That means there's no need to use the above filters")
+    # ── Initialize & Captions ──────────────────────────────────────────────
+    df = pd.DataFrame(columns=["full_name","adp","date"])
     st.caption("It will take ~ 15 seconds each time you select a player/players. Please be Patient")
     
-    # 3) Checkbox to trigger loading
     load = st.checkbox("Check the box to collect ADP's", value=True)
     if load:
         dfs = []
-        # Loop over every date from start_date to end_date
+        # ── Loop over date range ────────────────────────────────────────────
         for single_date in pd.date_range(start_date, end_date):
             date_str = single_date.strftime("%Y-%m-%d")
-            # This matches your other tabs' URLs exactly
             url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/'{date_str}_Underdog_ADP.csv"
             try:
                 tmp = pd.read_csv(url)
                 dfs.append(tmp)
             except Exception:
-                # skip missing dates silently
                 continue
-        
         if dfs:
             df = pd.concat(dfs, ignore_index=True)
         else:
             st.warning("No ADP files were loaded. Check that your start/end dates are correct.")
     
-    # 4) Build the multiselect safely
-    available_players = df["full_name"].unique().tolist()
-    default_players   = ["Kyren Williams", "Rashee Rice", "Breece Hall"]
-    valid_defaults    = [p for p in default_players if p in available_players]
+    # ── Player selector ────────────────────────────────────────────────────
+    available = df["full_name"].unique().tolist()
+    defaults  = [p for p in ["Kyren Williams","Rashee Rice","Breece Hall"] if p in available]
+    selected = st.multiselect("Which Player's ADP Would You Like to Compare?",
+                               options=available, default=defaults)
     
-    selected_players = st.multiselect(
-        "Which Player's ADP Would You Like to Compare?",
-        options=available_players,
-        default=valid_defaults,
-    )
-    
-    # 5) Filter & prepare for plotting
-    plot_df = df[df["full_name"].isin(selected_players)].copy()
+    # ── Prepare & plot ────────────────────────────────────────────────────
+    plot_df = df[df["full_name"].isin(selected)].copy()
     plot_df["date"] = pd.to_datetime(plot_df["date"], format="%Y-%m-%d", errors="coerce")
-    plot_df = plot_df.sort_values(["full_name", "date"]).reset_index(drop=True)
-    
-    # 6) Draw Altair line chart
+    plot_df = plot_df.sort_values(["full_name","date"]).reset_index(drop=True)
+    plot_df = plot_df.rename(columns={"full_name":"Player"})
+
+    # auto-scale Y-axis with padding
+    min_adp = plot_df["adp"].min()
+    max_adp = plot_df["adp"].max()
+    pad     = (max_adp - min_adp) * 0.1
+    y_scale = alt.Scale(reverse=True, domain=[max_adp + pad, min_adp - pad])
+
     line = (
         alt.Chart(plot_df)
            .mark_line()
            .encode(
-               x=alt.X("date:T", title="Date"),
-               y=alt.Y("adp:Q", title="ADP", scale=alt.Scale(reverse=True)),
-               color=alt.Color("full_name:N", title="Player")
+               alt.X("date:T", title="Date"),
+               alt.Y("adp:Q", title="ADP", scale=y_scale),
+               alt.Color("Player:N", title="Player")
            )
     )
-    label = line.encode(
+    label  = line.encode(
         x="max(date):T",
         y=alt.Y("adp:Q", aggregate=alt.ArgmaxDef(argmax="date")),
-        text="full_name"
+        text="Player"
     )
     text   = label.mark_text(align="left", dx=4)
     circle = label.mark_circle()
-    
+
     st.altair_chart(line + circle + text, use_container_width=True)
