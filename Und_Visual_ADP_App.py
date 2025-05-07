@@ -173,7 +173,7 @@ with tab_player:
                 if filename[:10] >= '2025-04-28':  # Only load files from 2025-04-28 onward
                     url = 'https://github.com' + link['href'].replace('/blob/', '/raw/')
                     dfs.append(pd.read_csv(url))
-        df = pd.concat(dfs) if dfs else pd.DataFrame(columns=["full_name", "adp", "date"])
+                    df = pd.concat(dfs)
 
             
 
