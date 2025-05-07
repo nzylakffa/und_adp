@@ -205,23 +205,28 @@ with tab_player:
     pad     = (max_adp - min_adp) * 0.1
     y_scale = alt.Scale(reverse=True, domain=[max_adp + pad, min_adp - pad])
 
-    # … after you compute y_scale …
-
     legend = alt.Legend(
         title="Player",
-        orient="top-right",  # place legend above the plot on the right
-        offset=20            # small gap so it’s not flush against the edge
+        orient="top",            # move legend above the plot
+        direction="horizontal",  # lay items out in a row
+        padding=10,              # a little breathing room
+        labelSeparation=20       # space between each entry
     )
-
+    
     line = (
         alt.Chart(plot_df)
            .mark_line()
            .encode(
                alt.X("date:T", title="Date"),
-               alt.Y("adp:Q",   title="ADP",   scale=y_scale),
+               alt.Y("adp:Q",   title="ADP", scale=y_scale),
                alt.Color("Player:N", legend=legend)
            )
+           .properties(
+               # widen it so legend has room
+               width=600
+           )
     )
+    
     label  = line.encode(
         x="max(date):T",
         y=alt.Y("adp:Q", aggregate=alt.ArgmaxDef(argmax="date")),
@@ -229,5 +234,5 @@ with tab_player:
     )
     text   = label.mark_text(align="left", dx=4)
     circle = label.mark_circle()
-
+    
     st.altair_chart(line + circle + text, use_container_width=True)
