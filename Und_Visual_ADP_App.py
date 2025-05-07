@@ -172,44 +172,49 @@ with tab_player:
                 filename = link['href'].split('/')[-1]
                 clean_filename = filename.lstrip("'")
                 if clean_filename[:10] >= '2025-04-28':
-                    # Build correct raw URL using cleaned filename
                     raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/'{clean_filename}"
                     try:
                         dfs.append(pd.read_csv(raw_url))
                     except Exception as e:
                         st.warning(f"Failed to load {raw_url}: {e}")
+        if dfs:
+            df = pd.concat(dfs, ignore_index=True)
+        else:
+            st.warning("No ADP files were loaded.")
 
+    # Safely handle default player selection
+    available_players = df['full_name'].unique().tolist()
+    default_players = ["Kyren Williams", "Rashee Rice", "Breece Hall"]
+    valid_defaults = [p for p in default_players if p in available_players]
 
     selected_players = st.multiselect(
-    "Which Player's ADP Would You Like to Compare?",
-    df['full_name'].unique(),
-    ["Kyren Williams", "Rashee Rice", "Breece Hall"])
+        "Which Player's ADP Would You Like to Compare?",
+        options=available_players,
+        default=valid_defaults
+    )
 
     df = df[df['full_name'].isin(selected_players)]
 
     df = df[['full_name', 'adp', 'date']]
-    
-    # Rename table headers
+
     df = df.rename(columns = {'full_name': 'Player'})
 
-    df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d", exact=False)
+    df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d", errors='coerce')
 
-    df = df.sort_values(by = 'Player', ascending = True)
-    df = df.sort_values(by = 'date', ascending = True)
-    df = df.reset_index(drop=True)
+    df = df.sort_values(by = ['Player', 'date']).reset_index(drop=True)
 
     line_chart = alt.Chart(df).mark_line().encode(
         alt.X('date:T', title = "Date"),
         alt.Y("adp:Q", title = "ADP", scale=alt.Scale(reverse=True, zero=False), axis=alt.Axis(tickCount=8)),
         color=alt.Color("Player", legend=None))
-    
-    label = line_chart.encode(
-    x='max(date):T',
-    y=alt.Y('adp:Q', aggregate = alt.ArgmaxDef(argmax='date')),
-    text='Player')
-    
-    text = label.mark_text(align='left', dx=4)
 
+    label = line_chart.encode(
+        x='max(date):T',
+        y=alt.Y('adp:Q', aggregate = alt.ArgmaxDef(argmax='date')),
+        text='Player')
+
+    text = label.mark_text(align='left', dx=4)
     circle = label.mark_circle()
-    
+
     st.altair_chart(line_chart + circle + text, use_container_width=True)
+
