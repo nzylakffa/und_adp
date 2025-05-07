@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup, SoupStrainer
 import requests
 import altair as alt
 import lxml
+import urllib.parse
 
 
 # Create two buttons for the dates's your comparing
@@ -173,33 +174,34 @@ with tab_player:
         resp = requests.get("https://github.com/nzylakffa/und_adp")
         soup = BeautifulSoup(resp.text, "lxml")
         
-        # collect (date, filename) tuples
+        # collect (date, encoded-filename) tuples
         records = []
         for a in soup.find_all("a", href=True):
             href = a["href"]
             if href.endswith(".csv"):
-                filename = href.split("/")[-1]         # e.g. "'2025-04-28_Underdog_ADP.csv"
-                clean = filename.lstrip("'")            # "2025-04-28_Underdog_ADP.csv"
+                href_fn    = href.split("/")[-1]               # e.g. "%272025-04-28_Underdog_ADP.csv"
+                decoded_fn = urllib.parse.unquote(href_fn)     # e.g. "'2025-04-28_…"
+                clean      = decoded_fn.lstrip("'")            # e.g. "2025-04-28_…"
                 try:
                     dt = datetime.datetime.strptime(clean[:10], "%Y-%m-%d").date()
                 except ValueError:
                     continue
                 if dt >= datetime.date(2025, 4, 28):
-                    records.append((dt, filename))
+                    records.append((dt, href_fn))
         
         if not records:
             st.warning("No files found on or after 2025-04-28.")
         else:
-            # sort chronologically
+            # sort by date
             records.sort(key=lambda x: x[0])
             dfs = []
-            for dt, fn in records:
-                raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/{fn}"
-                st.write("Loading:", raw_url)  # debug—remove if you like
+            for dt, fn_enc in records:
+                raw_url = f"https://raw.githubusercontent.com/nzylakffa/und_adp/main/{fn_enc}"
+                st.write("Loading:", raw_url)  # debug: remove if you like
                 try:
                     dfs.append(pd.read_csv(raw_url))
                 except Exception as e:
-                    st.warning(f"Failed to load {fn}: {e}")
+                    st.warning(f"Failed to load {fn_enc}: {e}")
             if dfs:
                 df = pd.concat(dfs, ignore_index=True)
             else:
@@ -216,12 +218,11 @@ with tab_player:
         default=valid_defaults,
     )
     
-    # filter down for charting
+    # filter & plot
     plot_df = df[df["full_name"].isin(selected_players)].copy()
     plot_df["date"] = pd.to_datetime(plot_df["date"], format="%Y-%m-%d", errors="coerce")
-    plot_df = plot_df.sort_values(["full_name", "date"])
+    plot_df = plot_df.sort_values(["full_name", "date"]).reset_index(drop=True)
     
-    # draw the Altair line chart
     line = (
         alt.Chart(plot_df)
            .mark_line()
@@ -240,3 +241,4 @@ with tab_player:
     circle = label.mark_circle()
     
     st.altair_chart(line + circle + text, use_container_width=True)
+
